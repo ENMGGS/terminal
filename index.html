@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Terminal</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #2e2e2e; /* Gray background for the entire page */
+            color: #ffffff; /* White text */
+            font-family: monospace;
+            margin: 0;
+        }
+        .terminal {
+            width: 80%;
+            max-width: 600px;
+            background-color: #000000; /* Black background for the terminal */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333; /* Optional: add a border to differentiate */
+            overflow: hidden;
+        }
+        #output {
+            height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+        #command {
+            width: 80%;
+            padding: 10px;
+            background-color: #111; /* Slightly lighter black for the input */
+            border: none;
+            color: #ffffff;
+            border-radius: 5px;
+        }
+        #sendButton, #scrollButton {
+            width: 18%;
+            padding: 10px;
+            background-color: #007bff; /* Blue color for the buttons */
+            border: none;
+            color: #ffffff;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        #sendButton:hover, #scrollButton:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+        .mini-web {
+            display: none;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            margin-top: 20px;
+        }
+        .mini-web.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div id="output"></div>
+        <input type="text" id="command" placeholder="Enter command...">
+        <button id="sendButton">Send</button>
+        <button id="scrollButton">Scroll</button>
+    </div>
+    <div id="miniWebContainer"></div>
+    <script>
+        async function getUserIP() {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        }
+
+        async function getLocationByIP(ip) {
+            try {
+                const response = await fetch(`https://ipinfo.io/${ip}?token=YOUR_IPINFO_TOKEN`);
+                const data = await response.json();
+                return `${data.city}, ${data.region}, ${data.country}`;
+            } catch (error) {
+                return 'Error retrieving location. Please try again later.';
+            }
+        }
+
+        function startCountAnimation(output, count) {
+            if (count > 999 || count < 0) {
+                output.innerText += 'Error: Number must be between 0 and 999.\n';
+                return;
+            }
+            let current = 0;
+            function renderCount() {
+                if (current <= count) {
+                    output.innerText += `${current}\n`;
+                    current++;
+                    setTimeout(renderCount, 100);
+                }
+            }
+            renderCount();
+        }
+
+        function printHeart(output) {
+            output.innerText += `
+  ****    ****  
+*******  *******
+**************
+ **************
+   **********
+     ****
+      **\n`;
+        }
+
+        function autoScrollToBottom() {
+            const output = document.getElementById('output');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Load terminal history and username from localStorage
+        window.onload = function() {
+            const savedHistory = localStorage.getItem('terminalHistory');
+            const savedUsername = localStorage.getItem('username');
+            const savedWebPages = JSON.parse(localStorage.getItem('webPages')) || {};
+
+            if (savedHistory) {
+                document.getElementById('output').innerText = savedHistory;
+                autoScrollToBottom();
+            }
+
+            if (savedUsername) {
+                username = savedUsername;
+            }
+
+            // Render saved web pages
+            const miniWebContainer = document.getElementById('miniWebContainer');
+            for (const [id, content] of Object.entries(savedWebPages)) {
+                miniWebContainer.innerHTML += `
+                    <div class="mini-web active" id="miniWeb${id}">
+                        ${content}
+                    </div>
+                `;
+            }
+        };
+
+        // Function to save terminal history
+        function saveHistory(output) {
+            localStorage.setItem('terminalHistory', output.innerText);
+        }
+
+        // Function to save username
+        function saveUsername(newUsername) {
+            localStorage.setItem('username', newUsername);
+        }
+
+        // Function to save web pages
+        function saveWebPages(id, content) {
+            const savedWebPages = JSON.parse(localStorage.getItem('webPages')) || {};
+            savedWebPages[id] = content;
+            localStorage.setItem('webPages', JSON.stringify(savedWebPages));
+        }
+
+        function isValidURL(url) {
+            try {
+                new URL(url);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function handleCommand(command) {
+            const output = document.getElementById('output');
+
+            // Add the entered command to the output
+            output.innerText += `$ ${command}\n`;
+
+            if (command.startsWith('setuser ')) {
+                const newUsername = command.split(' ')[1];
+                saveUsername(newUsername);
+                output.innerText += `Username set to ${newUsername}\n`;
+            } else if (command === 'mamanparsa --jende') {
+                output.innerText += "W bro, you're right\n";
+            } else if (command === 'whoisENM') {
+                output.innerText += 'ENM is a black ass goofy\n';
+            } else if (command === 'tg --channel') {
+                window.location.href = 'https://t.me/enmggm';
+            } else if (command === 'tg --pv') {
+                window.location.href = 'https://t.me/xdkko';
+            } else if (command === 'mamanparsafootage') {
+                window.location.href = 'https://pornhub.com';
+            } else if (command === 'help') {
+                output.innerText += 'Available commands: help, hello, date, whoisENM, tg --channel, tg --pv, mamanparsafootage, info, setuser <username>, mamanparsa --jende, clear, myip, count <number>, love, red <url>, blank --on, blank --off, create --web [html], clear --web\n';
+            } else if (command === 'hello') {
+                output.innerText += 'Hello, user!\n';
+            } else if (command === 'date') {
+                output.innerText += new Date().toString() + '\n';
+            } else if (command === 'info') {
+                const ip = await getUserIP();
+                const device = navigator.userAgent;
+                const date = new Date().toString();
+                const savedUsername = localStorage.getItem('username') || 'User';
+                output.innerText += `IP Address: ${ip}\nDevice: ${device}\nDate: ${date}\nUsername: ${savedUsername}\n`;
+            } else if (command === 'clear') {
+                output.innerText = '';
+                localStorage.removeItem('terminalHistory');
+            } else if (command === 'myip') {
+                const ip = await getUserIP();
+                output.innerText += `Your IP Address: ${ip}\n`;
+            } else if (command.startsWith('count ')) {
+                const number = parseInt(command.split(' ')[1], 10);
+                startCountAnimation(output, number);
+            } else if (command.startsWith('red ')) {
+                const url = command.split(' ')[1];
+                // Prepend https:// if not present
+                const fullUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+                if (isValidURL(fullUrl)) {
+                    window.open('about:blank', '_blank').document.location.href = fullUrl;
+                } else {
+                    output.innerText += 'Address is wrong\n';
+                }
+            } else if (command === 'love') {
+                printHeart(output);
+            } else if (command === 'blank --on') {
+                document.body.innerHTML = '<html><body></body></html>';
+                output.innerText += 'Switched to blank mode.\n';
+            } else if (command === 'blank --off') {
+                window.location.reload();
+            } else if (command.startsWith('create --web ')) {
+                const htmlContent = command.split(' ').slice(2).join(' ');
+                const uniqueId = Date.now();
+                const miniWebUrl = `/newWeb${uniqueId}`;
+                const miniWebContainer = document.getElementById('miniWebContainer');
+                miniWebContainer.innerHTML += `
+                    <div class="mini-web active" id="miniWeb${uniqueId}">
+                        ${htmlContent}
+                    </div>
+                `;
+                saveWebPages(uniqueId, htmlContent);
+                output.innerText += `Created new web section at ${miniWebUrl}\n`;
+            } else if (command === 'clear --web') {
+                const miniWebContainer = document.getElementById('miniWebContainer');
+                miniWebContainer.innerHTML = '';
+                localStorage.removeItem('webPages');
+                output.innerText += 'Cleared all web pages\n';
+            } else {
+                output.innerText += `Command not found: ${command}\n`;
+            }
+
+            saveHistory(output);
+            autoScrollToBottom();
+        }
+
+        document.getElementById('command').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                handleCommand(e.target.value);
+                e.target.value = '';
+            }
+        });
+
+        document.getElementById('sendButton').addEventListener('click', function () {
+            const command = document.getElementById('command').value;
+            handleCommand(command);
+            document.getElementById('command').value = '';
+        });
+
+        document.getElementById('scrollButton').addEventListener('click', function () {
+            autoScrollToBottom();
+        });
+
+        document.getElementById('miniWebContainer').addEventListener('click', function (e) {
+            if (e.target.classList.contains('mini-web')) {
+                e.target.classList.toggle('active');
+            }
+        });
+    </script>
+</body>
+</html>
